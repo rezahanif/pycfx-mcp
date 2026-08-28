@@ -1,0 +1,33 @@
+{
+  "id": "ansys-cfx-mcp",
+  "name": "Ansys CFX Computational Fluid Dynamics",
+  "category": "Simulation & CFD",
+  "tags": [
+    "ansys",
+    "cfx",
+    "cfd",
+    "fluid-dynamics",
+    "simulation",
+    "mcp",
+    "pyansys",
+    "engineering"
+  ],
+  "author": {
+    "name": "AiConnect Official",
+    "url": "https://aiconnect.fun",
+    "verified": true
+  },
+  "description": "Drive Ansys CFX computational fluid dynamics from AI agents \u2014 build and edit CFX-Pre cases, launch and monitor solver runs, and extract results through CFD-Post. Full session support requires Ansys CFX on Windows; the bundled PyCFX backend covers non-GUI operations.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/rezahanif/pycfx-mcp",
+  "assets": {
+    "icon": "assets/logo.svg"
+  },
+  "capabilities": [
+    "Author and modify CFX-Pre simulation cases",
+    "Launch, monitor and stop CFX solver runs",
+    "Extract quantitative results through CFD-Post",
+    "Inspect model context and mesh state",
+    "Drive multi-step CFD workflows end to end"
+  ]
+}

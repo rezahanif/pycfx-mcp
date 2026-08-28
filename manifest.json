@@ -5,7 +5,7 @@
   "manifest_schema_version": 1,
   "package_format_version": 1,
   "platform": {
-    "os": "any",
+    "os": "windows",
     "arch": "x64"
   },
   "runtime": "python",

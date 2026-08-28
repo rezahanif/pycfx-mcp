@@ -19,11 +19,11 @@
 from __future__ import annotations
 
 from typing import Any, Awaitable, Callable, Iterable, Literal, Optional, cast
-
 from ansys.cfx.mcp.cfx.backend import CFXBackend
 from ansys.cfx.mcp.common.backend import Backend
 from ansys.cfx.mcp.common.base import FluidsLeafMCP
 from ansys.cfx.mcp.common.errors import typed_guard
+from ansys.cfx.mcp.common.models import ConnectResult
 
 
 class CFXMCP(FluidsLeafMCP):
@@ -66,6 +66,20 @@ class CFXMCP(FluidsLeafMCP):
                 "find_api",
                 "get_help",
                 "error_remediation",
+                # CFX manifest tools
+                "connect_cfx",
+                "get_setup",
+                "set_setup",
+                "save_case",
+                "start_solve",
+                "get_solve_status",
+                "stop_solve",
+                "get_results",
+                "disconnect_cfx",
+                "get_version",
+                "list_cfx_api_categories",
+                "search_cfx_api",
+                "query_cfx_registry",
             ),
             **fastmcp_kwargs,
         )
@@ -84,6 +98,33 @@ class CFXMCP(FluidsLeafMCP):
             self._tool_cfx_workflow()
         if "cfx_model_context" in self._exposed:
             self._tool_cfx_model_context()
+        # CFX manifest tools
+        if "connect_cfx" in self._exposed:
+            self._tool_connect_cfx()
+        if "get_setup" in self._exposed:
+            self._tool_get_setup()
+        if "set_setup" in self._exposed:
+            self._tool_set_setup()
+        if "save_case" in self._exposed:
+            self._tool_save_case()
+        if "start_solve" in self._exposed:
+            self._tool_start_solve()
+        if "get_solve_status" in self._exposed:
+            self._tool_get_solve_status()
+        if "stop_solve" in self._exposed:
+            self._tool_stop_solve()
+        if "get_results" in self._exposed:
+            self._tool_get_results()
+        if "disconnect_cfx" in self._exposed:
+            self._tool_disconnect_cfx()
+        if "get_version" in self._exposed:
+            self._tool_get_version()
+        if "list_cfx_api_categories" in self._exposed:
+            self._tool_list_cfx_api_categories()
+        if "search_cfx_api" in self._exposed:
+            self._tool_search_cfx_api()
+        if "query_cfx_registry" in self._exposed:
+            self._tool_query_cfx_registry()
 
     def _tool_cfx_workflow(self) -> None:
         """Register the ``cfx_workflow`` MCP tool for lifecycle actions.
@@ -201,6 +242,471 @@ class CFXMCP(FluidsLeafMCP):
                 params=params or {},
                 max_items=max_items,
             )
+
+    # ---- CFX manifest tools -----------------------------------------------
+
+    def _tool_connect_cfx(self) -> None:
+        """Register the ``connect_cfx`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="connect_cfx",
+            description=(
+                "Connect to a CFX session. Supports auto, launch, or attach mode. "
+                "Pass ip/port/password/server_info_file for attach, or "
+                "case_file_name/product_version for launch."
+            ),
+        )
+        @typed_guard
+        async def connect_cfx(
+            mode: str = "auto",
+            ip: Optional[str] = None,
+            port: Optional[int] = None,
+            password: Optional[str] = None,
+            server_info_file: Optional[str] = None,
+            case_file_name: Optional[str] = None,
+            product_version: Optional[str] = None,
+            solver_input_file: Optional[str] = None,
+            results_file: Optional[str] = None,
+            ui_mode: Optional[str] = None,
+            start_timeout: int = 60,
+        ) -> ConnectResult:
+            """Connect to a CFX session.
+
+            Parameters
+            ----------
+            mode : str, default: ``'auto'``
+                Connection mode: ``'auto'``, ``'launch'``, or ``'attach'``.
+            ip : Optional[str], default: None
+                IP address for attach mode.
+            port : Optional[int], default: None
+                Port for attach mode.
+            password : Optional[str], default: None
+                Password for attach mode.
+            server_info_file : Optional[str], default: None
+                Server info file for attach mode.
+            case_file_name : Optional[str], default: None
+                Case file to open on launch.
+            product_version : Optional[str], default: None
+                Ansys product version.
+            solver_input_file : Optional[str], default: None
+                Solver input .def file for direct solver launch.
+            results_file : Optional[str], default: None
+                Results .res file for post-processing.
+            ui_mode : Optional[str], default: None
+                CFX UI mode.
+            start_timeout : int, default: 60
+                Timeout for session launch.
+
+            Returns
+            -------
+            ConnectResult
+                Connection result describing the selected backend session.
+            """
+            kwargs: dict[str, Any] = {}
+            if ip is not None:
+                kwargs["ip"] = ip
+            if port is not None:
+                kwargs["port"] = port
+            if password is not None:
+                kwargs["password"] = password
+            if server_info_file is not None:
+                kwargs["server_info_file"] = server_info_file
+            if case_file_name is not None:
+                kwargs["case_file_name"] = case_file_name
+            if product_version is not None:
+                kwargs["product_version"] = product_version
+            if solver_input_file is not None:
+                kwargs["solver_input_file"] = solver_input_file
+            if results_file is not None:
+                kwargs["results_file"] = results_file
+            if ui_mode is not None:
+                kwargs["ui_mode"] = ui_mode
+            kwargs["start_timeout"] = start_timeout
+            result = await self.backend.connect(mode=mode, **kwargs)
+            if result.status == "ok":
+                kind = self.default_backend_kind or next(iter(self._backends))
+                self._active_kind = kind
+            return result
+
+    def _tool_get_setup(self) -> None:
+        """Register the ``get_setup`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="get_setup",
+            description="Return a summary of the current CFX setup including named objects, state, and solver status.",
+        )
+        @typed_guard
+        async def get_setup() -> dict[str, Any]:
+            """Return a summary of the current CFX setup.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            return await self.backend.summarize_setup()
+
+    def _tool_set_setup(self) -> None:
+        """Register the ``set_setup`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="set_setup",
+            description="Set a value on a CFX setup path (e.g. domain turbulence model, boundary condition).",
+        )
+        @typed_guard
+        async def set_setup(
+            path: str,
+            value: Any,
+        ) -> dict[str, Any]:
+            """Set a value on a CFX setup path.
+
+            Parameters
+            ----------
+            path : str
+                Dotted CFX path to set.
+            value : Any
+                Value to assign.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            backend = cast(CFXBackend, self.backend)
+            return await backend.set_state(path=path, value=value)
+
+    def _tool_save_case(self) -> None:
+        """Register the ``save_case`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="save_case",
+            description="Save the current CFX-Pre case to a .cfx file.",
+        )
+        @typed_guard
+        async def save_case(path: str) -> dict[str, Any]:
+            """Save the current CFX case.
+
+            Parameters
+            ----------
+            path : str
+                Destination .cfx file path.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            backend = cast(CFXBackend, self.backend)
+            return await backend.save_case(path=path)
+
+    def _tool_start_solve(self) -> None:
+        """Register the ``start_solve`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="start_solve",
+            description="Start the CFX-Solver run from a .def input file.",
+        )
+        @typed_guard
+        async def start_solve(
+            def_file: str,
+            product_version: Optional[str] = None,
+            cleanup_on_exit: bool = True,
+        ) -> dict[str, Any]:
+            """Start the CFX-Solver run.
+
+            Parameters
+            ----------
+            def_file : str
+                Path to the CFX solver input .def file.
+            product_version : Optional[str], default: None
+                Ansys product version to use.
+            cleanup_on_exit : bool, default: True
+                Whether to clean up the solver process on exit.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            backend = cast(CFXBackend, self.backend)
+            return await backend.start_solve(
+                def_file=def_file,
+                product_version=product_version,
+                cleanup_on_exit=cleanup_on_exit,
+            )
+
+    def _tool_get_solve_status(self) -> None:
+        """Register the ``get_solve_status`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="get_solve_status",
+            description="Return CFX-Solver run status including whether it is running, results file, and session info.",
+        )
+        @typed_guard
+        async def get_solve_status() -> dict[str, Any]:
+            """Return CFX-Solver run status.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            return await self.backend.solver_status()
+
+    def _tool_stop_solve(self) -> None:
+        """Register the ``stop_solve`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="stop_solve",
+            description="Stop the active CFX-Solver run.",
+        )
+        @typed_guard
+        async def stop_solve(wait: bool = True) -> dict[str, Any]:
+            """Stop the active CFX-Solver run.
+
+            Parameters
+            ----------
+            wait : bool, default: True
+                Whether to wait until the solver acknowledges the stop.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            backend = cast(CFXBackend, self.backend)
+            return await backend.stop_solve(wait=wait)
+
+    def _tool_get_results(self) -> None:
+        """Register the ``get_results`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="get_results",
+            description="Return the .res results file path from the active solver session.",
+        )
+        @typed_guard
+        async def get_results() -> dict[str, Any]:
+            """Return the results file path.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            backend = cast(CFXBackend, self.backend)
+            return await backend.get_results()
+
+    def _tool_disconnect_cfx(self) -> None:
+        """Register the ``disconnect_cfx`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="disconnect_cfx",
+            description="Disconnect all active CFX sessions and release resources.",
+        )
+        @typed_guard
+        async def disconnect_cfx() -> dict[str, Any]:
+            """Disconnect all CFX sessions.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            if self._active_kind is not None:
+                await self.backend.disconnect()
+                self._active_kind = None
+            return {"status": "ok", "message": "All CFX sessions disconnected."}
+
+    def _tool_get_version(self) -> None:
+        """Register the ``get_version`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="get_version",
+            description="Return the Ansys CFX / PyCFX version information.",
+        )
+        @typed_guard
+        async def get_version() -> dict[str, Any]:
+            """Return CFX version information.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            backend = cast(CFXBackend, self.backend)
+            return await backend.get_version()
+
+    def _tool_list_cfx_api_categories(self) -> None:
+        """Register the ``list_cfx_api_categories`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="list_cfx_api_categories",
+            description="List the available CFX API categories (Pre, Solver, Post, etc.) and their descriptions.",
+        )
+        @typed_guard
+        async def list_cfx_api_categories() -> dict[str, Any]:
+            """List CFX API categories.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            backend = cast(CFXBackend, self.backend)
+            return await backend.list_cfx_api_categories()
+
+    def _tool_search_cfx_api(self) -> None:
+        """Register the ``search_cfx_api`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="search_cfx_api",
+            description="Search the CFX API catalog by keyword to find matching paths, kinds, and descriptions.",
+        )
+        @typed_guard
+        async def search_cfx_api(
+            query: str,
+            top_k: int = 10,
+            kinds: Optional[list[str]] = None,
+            under: Optional[str] = None,
+        ) -> list[dict[str, Any]]:
+            """Search the CFX API catalog.
+
+            Parameters
+            ----------
+            query : str
+                Search query for ranking CFX API or object matches.
+            top_k : int, default: 10
+                Maximum number of results to return.
+            kinds : Optional[list[str]], default: None
+                Optional kind filter.
+            under : Optional[str], default: None
+                Optional CFX path prefix filter.
+
+            Returns
+            -------
+            list[dict[str, Any]]
+                List of matching API catalog entries.
+            """
+            return await self.backend.find_api(query=query, top_k=top_k, kinds=kinds, under=under)
+
+    def _tool_query_cfx_registry(self) -> None:
+        """Register the ``query_cfx_registry`` MCP tool.
+
+        Returns
+        -------
+        None
+            No value is returned. Side effects are applied to the relevant cache, session, or
+            server.
+        """
+
+        @self.tool(
+            name="query_cfx_registry",
+            description=(
+                "Query the CFX API registry for detailed information about a specific path, "
+                "including allowed values, active status, and help text."
+            ),
+        )
+        @typed_guard
+        async def query_cfx_registry(
+            path: str,
+        ) -> dict[str, Any]:
+            """Query the CFX API registry for a specific path.
+
+            Parameters
+            ----------
+            path : str
+                CFX path to query.
+
+            Returns
+            -------
+            dict[str, Any]
+                Structured response payload for the requested operation.
+            """
+            return await self.backend.get_help(path=path)
 
 
 __all__ = ["CFXMCP"]

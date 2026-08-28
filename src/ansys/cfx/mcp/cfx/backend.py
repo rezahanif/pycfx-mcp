@@ -1098,6 +1098,174 @@ class CFXBackend(Backend):
             summary["state"] = {"_note": "No active CFX-Pre session."}
         return summary
 
+    # ---- CFX manifest backend helpers --------------------------------------
+
+    async def set_state(self, *, path: str, value: Any) -> dict[str, Any]:
+        """Set a value on a CFX setup path via the live session tree.
+
+        Parameters
+        ----------
+        path : str
+            Dotted CFX path to set (e.g. ``domain.fluid_models.turbulence_model.option``).
+        value : Any
+            Value to assign.
+
+        Returns
+        -------
+        dict[str, Any]
+            Structured response payload for the requested operation.
+        """
+        if not self.is_connected():
+            return {"status": "error", "message": "No active CFX session."}
+        try:
+            node = self._resolve_live_path(path)
+            set_state = getattr(node, "set_state", None)
+            if callable(set_state):
+                set_state(value)
+                return {"status": "ok", "path": path, "value": value}
+            return {"status": "error", "path": path, "message": "Path does not support set_state()."}
+        except Exception as exc:
+            return {"status": "error", "path": path, "message": str(exc)}
+
+    async def save_case(self, *, path: str) -> dict[str, Any]:
+        """Save the current CFX-Pre case to a .cfx file.
+
+        Parameters
+        ----------
+        path : str
+            Destination .cfx file path.
+
+        Returns
+        -------
+        dict[str, Any]
+            Structured response payload for the requested operation.
+        """
+        pre = SessionManager.get_pre()
+        if pre is None:
+            return {"status": "error", "message": "No active CFX-Pre session."}
+        try:
+            pre.raw.file.save_case(case_file_name=path)
+            return {"status": "ok", "path": path}
+        except Exception as exc:
+            return {"status": "error", "path": path, "message": str(exc)}
+
+    async def start_solve(self, *, def_file: str, **kwargs: Any) -> dict[str, Any]:
+        """Start the CFX-Solver run from a .def input file.
+
+        Parameters
+        ----------
+        def_file : str
+            Path to the CFX solver input .def file.
+        **kwargs : Any
+            Additional solver launch parameters (product_version, cleanup_on_exit).
+
+        Returns
+        -------
+        dict[str, Any]
+            Structured response payload for the requested operation.
+        """
+        solver = SessionManager.get_solver()
+        if solver is not None and solver.is_active:
+            try:
+                solver.start_run()
+                return {"status": "ok", "message": "Solver run started.", "def_file": def_file}
+            except Exception as exc:
+                return {"status": "error", "message": str(exc)}
+        # No active solver — launch one
+        try:
+            product_version = kwargs.get("product_version")
+            cleanup_on_exit = bool(kwargs.get("cleanup_on_exit", True))
+            new_solver = SessionManager.launch_solver(
+                def_file,
+                product_version=product_version,
+                cleanup_on_exit=cleanup_on_exit,
+            )
+            new_solver.start_run()
+            return {"status": "ok", "message": "Solver launched and started.", "def_file": def_file}
+        except Exception as exc:
+            return {"status": "error", "message": str(exc)}
+
+    async def stop_solve(self, *, wait: bool = True) -> dict[str, Any]:
+        """Stop the active CFX-Solver run.
+
+        Parameters
+        ----------
+        wait : bool, default: True
+            Whether to wait until the solver acknowledges the stop.
+
+        Returns
+        -------
+        dict[str, Any]
+            Structured response payload for the requested operation.
+        """
+        solver = SessionManager.get_solver()
+        if solver is None:
+            return {"status": "error", "message": "No active CFX-Solver session."}
+        try:
+            solver.stop_run(wait=wait)
+            return {"status": "ok", "message": "Solver stop requested."}
+        except Exception as exc:
+            return {"status": "error", "message": str(exc)}
+
+    async def get_results(self) -> dict[str, Any]:
+        """Return the .res results file path from the active solver session.
+
+        Returns
+        -------
+        dict[str, Any]
+            Structured response payload for the requested operation.
+        """
+        solver = SessionManager.get_solver()
+        results_file = None
+        if solver is not None:
+            try:
+                results_file = solver.get_results_file_name()
+            except Exception:
+                results_file = None
+        results_file = results_file or SessionManager.get_results_file()
+        return {"status": "ok", "results_file": results_file}
+
+    async def get_version(self) -> dict[str, Any]:
+        """Return the Ansys CFX / PyCFX version information.
+
+        Returns
+        -------
+        dict[str, Any]
+            Structured response payload for the requested operation.
+        """
+        try:
+            import ansys.cfx.core as pycfx
+
+            version = getattr(pycfx, "__version__", "unknown")
+        except Exception:
+            version = "unknown"
+        return {
+            "status": "ok",
+            "pycfx_version": version,
+            "backend_kind": self.kind,
+            "backend_label": self.label,
+        }
+
+    async def list_cfx_api_categories(self) -> dict[str, Any]:
+        """List the available CFX API categories from the built-in catalog.
+
+        Returns
+        -------
+        dict[str, Any]
+            Structured response payload for the requested operation.
+        """
+        categories: dict[str, list[dict[str, Any]]] = {}
+        for entry in _CFX_API_CATALOG:
+            stage = entry.get("stage", "general")
+            if stage not in categories:
+                categories[stage] = []
+            categories[stage].append({
+                "path": entry["path"],
+                "kind": entry["kind"],
+                "description": entry.get("description", ""),
+            })
+        return {"status": "ok", "categories": categories, "total": len(_CFX_API_CATALOG)}
+
     async def cfx_workflow(
         self,
         *,
