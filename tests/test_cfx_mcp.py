@@ -46,9 +46,8 @@ def test_cfx_mcp_exposes_compact_tool_surface() -> None:
     leaf = CFXMCP()
 
     assert set(leaf._exposed) == {
+        # Shared PyAnsys base tools.
         "session_status",
-        "connect",
-        "disconnect",
         "cfx_workflow",
         "cfx_model_context",
         "run_code",
@@ -56,7 +55,35 @@ def test_cfx_mcp_exposes_compact_tool_surface() -> None:
         "find_api",
         "get_help",
         "error_remediation",
+        # CFX-specific tools.
+        "connect_cfx",
+        "get_setup",
+        "set_setup",
+        "save_case",
+        "start_solve",
+        "get_solve_status",
+        "stop_solve",
+        "get_results",
+        "disconnect_cfx",
+        "list_cfx_api_categories",
     }
+
+
+def test_cfx_mcp_does_not_expose_redundant_aliases() -> None:
+    """Five tools were dropped because benchmarking measured them at exactly
+    0.00 marginal coverage - each had a twin that already covered it:
+
+      connect/disconnect     superseded by the typed connect_cfx/disconnect_cfx
+      search_cfx_api         a strict SUBSET of find_api (no `compact` arg)
+      query_cfx_registry     byte-identical to get_help
+      get_version            reported only the Python package version
+
+    They remain registrable via an explicit `expose_tools`, so this asserts the
+    DEFAULT profile, not their removal from the codebase.
+    """
+    assert set(CFXMCP()._exposed).isdisjoint(
+        {"connect", "disconnect", "search_cfx_api", "query_cfx_registry", "get_version"}
+    )
 
 
 def test_cfx_mcp_hides_low_level_tools_by_default() -> None:
@@ -79,13 +106,28 @@ def test_cfx_mcp_toolsets_include_exposed_cfx_tools_only() -> None:
     tools_by_toolset = {toolset["name"]: set(toolset["tools"]) for toolset in toolsets}
     toolset_tools = set().union(*(toolset["tools"] for toolset in toolsets))
 
-    assert tools_by_toolset["connection"] == {"session_status", "connect", "disconnect"}
+    assert tools_by_toolset["connection"] == {"session_status"}
     assert tools_by_toolset["code-validation"] == {"validate_code"}
     assert tools_by_toolset["cfx-workflow"] == {"cfx_workflow"}
     assert tools_by_toolset["cfx-model-context"] == {"cfx_model_context"}
     assert tools_by_toolset["code-execution"] == {"run_code", "validate_code"}
-    assert tools_by_toolset["api-discovery"] == {"find_api", "get_help"}
+    assert tools_by_toolset["api-discovery"] == {
+        "find_api",
+        "get_help",
+        "list_cfx_api_categories",
+    }
+    assert tools_by_toolset["cfx-session"] == {"connect_cfx", "disconnect_cfx"}
+    assert tools_by_toolset["cfx-setup"] == {"get_setup", "set_setup", "save_case"}
+    assert tools_by_toolset["cfx-solve"] == {
+        "start_solve",
+        "get_solve_status",
+        "stop_solve",
+        "get_results",
+    }
     assert tools_by_toolset["error-handling"] == {"error_remediation"}
+    # Every exposed tool must appear in some toolset. c74703d added 13 tools and
+    # catalogued none of them, so `toolsets://definition` advertised a 10-tool
+    # surface while tools/list returned 23.
     assert toolset_tools == set(leaf._exposed)
     assert "named-objects" not in tools_by_toolset
     assert "state-inspection" not in tools_by_toolset

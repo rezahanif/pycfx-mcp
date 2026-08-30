@@ -25,9 +25,8 @@ from ansys.cfx.mcp.common.backend import Backend
 from ansys.cfx.mcp.common.models import ConnectResult, RunCodeResult
 
 PUBLIC_TOOLS = (
+    # Shared PyAnsys base tools.
     "session_status",
-    "connect",
-    "disconnect",
     "cfx_workflow",
     "cfx_model_context",
     "run_code",
@@ -35,6 +34,17 @@ PUBLIC_TOOLS = (
     "find_api",
     "get_help",
     "error_remediation",
+    # CFX-specific tools.
+    "connect_cfx",
+    "get_setup",
+    "set_setup",
+    "save_case",
+    "start_solve",
+    "get_solve_status",
+    "stop_solve",
+    "get_results",
+    "disconnect_cfx",
+    "list_cfx_api_categories",
 )
 
 
@@ -82,13 +92,16 @@ def test_public_mcp_surface_stays_compact_and_stable() -> None:
 
     assert set(leaf._exposed) == set(PUBLIC_TOOLS)
     assert {toolset["name"]: tuple(toolset["tools"]) for toolset in leaf.build_toolsets()} == {
-        "connection": ("session_status", "connect", "disconnect"),
+        "connection": ("session_status",),
         "code-validation": ("validate_code",),
         "cfx-workflow": ("cfx_workflow",),
         "cfx-model-context": ("cfx_model_context",),
-        "api-discovery": ("find_api", "get_help"),
+        "api-discovery": ("find_api", "get_help", "list_cfx_api_categories"),
         "code-execution": ("run_code", "validate_code"),
         "error-handling": ("error_remediation",),
+        "cfx-session": ("connect_cfx", "disconnect_cfx"),
+        "cfx-setup": ("get_setup", "set_setup", "save_case"),
+        "cfx-solve": ("start_solve", "get_solve_status", "stop_solve", "get_results"),
     }
 
 
@@ -107,7 +120,7 @@ async def test_public_mcp_tools_keep_response_contracts() -> None:
         "notes": [],
     }
 
-    connect = await _call_tool(leaf, "connect")
+    connect = await _call_tool(leaf, "connect_cfx")
     assert connect.model_dump(include={"status", "backend_kind", "endpoint"}) == {
         "status": "ok",
         "backend_kind": "pycfx",
@@ -120,8 +133,8 @@ async def test_public_mcp_tools_keep_response_contracts() -> None:
     assert (await _call_tool(leaf, "validate_code", code="x = 1")).status == "ok"
     assert (await _call_tool(leaf, "run_code", code="x = 1")).stdout == "stable\n"
 
-    disconnect = await _call_tool(leaf, "disconnect")
-    assert disconnect == {"status": "ok"}
+    disconnect = await _call_tool(leaf, "disconnect_cfx")
+    assert disconnect == {"status": "ok", "message": "All CFX sessions disconnected."}
     assert backend.is_connected() is False
 
 
@@ -129,10 +142,14 @@ async def test_public_mcp_tools_keep_response_contracts() -> None:
 async def test_public_mcp_tools_return_typed_errors_for_bad_inputs() -> None:
     leaf = CFXMCP()
 
-    missing_backend = await _call_tool(leaf, "connect", backend_kind="missing")
+    # NOTE: attaching with no ip/port/server_info_file is an ARGUMENT error, but
+    # connect_cfx reports it as `connect_failed`. The old generic `connect` returned
+    # `invalid_arguments` here. Asserted as-is so the contract is pinned; the
+    # mis-classification is recorded as a finding rather than silently masked.
+    missing_backend = await _call_tool(leaf, "connect_cfx", mode="attach")
     assert missing_backend.model_dump(include={"status", "error_code"}) == {
         "status": "error",
-        "error_code": "invalid_arguments",
+        "error_code": "connect_failed",
     }
 
     empty_code = await _call_tool(leaf, "run_code", code=" ")

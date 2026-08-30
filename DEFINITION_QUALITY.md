@@ -82,3 +82,26 @@ Subtotal: 10/10 → normalized: 100/100
 - `src/ansys/cfx/mcp/cfx/backend.py` (CFX backend — 500 lines of 2444)
 - `src/ansys/cfx/mcp/cli.py` (CLI entry point — full)
 - `pyproject.toml` (dependencies, entry points)
+
+
+---
+
+## Correction — 2026-08-28 (bundle benchmark)
+
+Scored 2026-08-23 against a 20-defined / 7-exposed profile. Two claims above no longer hold as
+written, and one number was always wrong:
+
+- **`_CFX_API_CATALOG` covers 20 paths, not 18** (E1). AST-counted at `cfx/backend.py:301-469`.
+- **B=100 "zero naming collisions / each tool maps to a unique operation" was falsified by
+  `c74703d`**, which exposed `search_cfx_api` alongside `find_api` and `query_cfx_registry`
+  alongside `get_help` — two names for one backend call, both listed at once. It is true again
+  only because the benchmark removed the duplicates. Re-score against the current 18-tool profile
+  before quoting 93.0.
+- **F=100 rested on `find_api` + `get_help` being directly exposed.** They are — and the aliases
+  that briefly shadowed them are gone.
+- **D=100 "no stubs, no silent-skip" needs one asterisk**: `get_results` returned
+  `{"status": "ok", "results_file": null}` from empty state until 2026-08-28 (N44), which is a
+  silent degradation the D-dimension is meant to catch. `get_version` still reports the Python
+  wrapper's version while claiming to report the Ansys CFX version (N43).
+
+Full measurement: `aiconnector/docs/audit/ANSYS-CFX-API-BENCHMARK.md`.

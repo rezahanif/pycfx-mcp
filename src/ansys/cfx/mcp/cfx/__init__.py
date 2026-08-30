@@ -33,6 +33,70 @@ class CFXMCP(FluidsLeafMCP):
     default_backend_kind = "pycfx"
     component_label = "cfx"
 
+    #: The base class asks leaves to override this with a domain-specific
+    #: description; CFX never did, and benchmarking found the generic wording
+    #: was the connector's ONLY stranded task - "How do I set up a rotating
+    #: domain in CFX?" retrieved set_setup/get_setup instead. Deliberately
+    #: avoids the bare verb "write", which is what let office's
+    #: xlsx_write_cells match "Write me a haiku".
+    error_remediation_description: str = (
+        "Answer a how-to or troubleshooting question about CFX in prose. "
+        "Use it to explain a workflow, walk through configuring a model "
+        "feature such as a rotating domain or a mesh interface, or "
+        "diagnose an error message and suggest a remedy. Returns a "
+        "Markdown explanation for the user to read; it does not change "
+        "the model."
+    )
+
+    #: The shared catalogue plus the CFX-specific toolsets. `build_toolsets()`
+    #: filters by `self._exposed`, so a tool missing from here is advertised by
+    #: `toolsets://definition` as if it did not exist - which is how the surface
+    #: added in c74703d stayed invisible to the resource that describes it.
+    #: CFX-only names live here rather than in the shared base so other leaves
+    #: do not inherit them.
+    _TOOLSET_CATALOGUE = {
+        **FluidsLeafMCP._TOOLSET_CATALOGUE,
+        "api-discovery": {
+            **FluidsLeafMCP._TOOLSET_CATALOGUE["api-discovery"],
+            "tools": [
+                *FluidsLeafMCP._TOOLSET_CATALOGUE["api-discovery"]["tools"],
+                "list_cfx_api_categories",
+            ],
+        },
+        "cfx-session": {
+            "description": "Tools for opening and closing live CFX sessions.",
+            "skill": (
+                "Use connect_cfx to launch CFX-Pre or attach to a running "
+                "instance; it takes explicit ip/port/password or a "
+                "server-information file rather than a free-form dict. "
+                "Call disconnect_cfx to close every session and release "
+                "the licence."
+            ),
+            "tools": ["connect_cfx", "disconnect_cfx"],
+        },
+        "cfx-setup": {
+            "description": "Tools for reading and modifying the CFX case setup.",
+            "skill": (
+                "Call get_setup for a compact snapshot of named objects, "
+                "state and solver status. Use set_setup to change a value "
+                "at a CCL path, such as a domain turbulence model or a "
+                "boundary condition. Use save_case to persist the case "
+                "to a .cfx file."
+            ),
+            "tools": ["get_setup", "set_setup", "save_case"],
+        },
+        "cfx-solve": {
+            "description": "Tools for running and monitoring the CFX solver.",
+            "skill": (
+                "Use start_solve to launch CFX-Solver from a .def file, "
+                "get_solve_status to poll whether it is still running, "
+                "stop_solve to abort a run, and get_results to obtain the "
+                ".res file once the run has finished."
+            ),
+            "tools": ["start_solve", "get_solve_status", "stop_solve", "get_results"],
+        },
+    }
+
     def __init__(
         self, *, expose_tools: Optional[Iterable[str]] = None, **fastmcp_kwargs: Any
     ) -> None:
@@ -56,9 +120,8 @@ class CFXMCP(FluidsLeafMCP):
             backends=backends,
             expose_tools=expose_tools
             or (
+                # Shared PyAnsys base tools.
                 "session_status",
-                "connect",
-                "disconnect",
                 "cfx_workflow",
                 "cfx_model_context",
                 "run_code",
@@ -66,7 +129,7 @@ class CFXMCP(FluidsLeafMCP):
                 "find_api",
                 "get_help",
                 "error_remediation",
-                # CFX manifest tools
+                # CFX-specific tools.
                 "connect_cfx",
                 "get_setup",
                 "set_setup",
@@ -76,10 +139,7 @@ class CFXMCP(FluidsLeafMCP):
                 "stop_solve",
                 "get_results",
                 "disconnect_cfx",
-                "get_version",
                 "list_cfx_api_categories",
-                "search_cfx_api",
-                "query_cfx_registry",
             ),
             **fastmcp_kwargs,
         )

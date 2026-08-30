@@ -15,6 +15,40 @@
   "port_env_var": "MCP_PORT",
   "token_env_var": "MCP_LICENSE_TOKEN",
   "stdio": true,
+  "tool_tiers": {
+    "core": [
+      "cfx_workflow",
+      "cfx_model_context",
+      "run_code",
+      "validate_code",
+      "get_setup",
+      "set_setup",
+      "get_solve_status",
+      "stop_solve",
+      "find_api",
+      "get_help"
+    ],
+    "relevance_floor": 5.5
+  },
+  "tool_index": {
+    "exec_tool": "run_code",
+    "capabilities_file": "src/ansys/cfx/mcp/aiconnect-capabilities.json",
+    "relevance_floor": 5.5
+  },
+  "package": {
+    "include": [
+      "run_server.py",
+      "src",
+      "scripts",
+      "LICENSE"
+    ],
+    "exclude": [
+      "scripts/package-acpkg.sh"
+    ],
+    "vendor": [
+      "_vendor"
+    ]
+  },
   "platform_requirements": {
     "python": [
       "Python >= 3.10",

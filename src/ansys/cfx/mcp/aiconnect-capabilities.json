@@ -1,0 +1,145 @@
+{
+ "exec_tool": "run_code",
+ "capabilities": [
+  {
+   "name": "PreProcessing.from_install",
+   "kind": "Constructor",
+   "stage": "pre",
+   "description": "Launch a local CFX-Pre session from the installed Ansys version.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "connect_to_cfx",
+   "kind": "Function",
+   "stage": "pre/post",
+   "description": "Attach to an existing PyCFX-MCP instance by IP address, port, and password, or server-information file.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "pre.setup.flow",
+   "kind": "NamedObject",
+   "stage": "pre",
+   "description": "CFX-Pre flow-analysis collection, usually indexed by 'Flow Analysis 1'.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "flow.domain",
+   "kind": "NamedObject",
+   "stage": "pre",
+   "description": "Domain collection under a flow analysis, usually indexed by domain name.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "domain.boundary",
+   "kind": "NamedObject",
+   "stage": "pre",
+   "description": "Boundary collection for inlet, outlet, wall, opening, symmetry, and interface setup.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "boundary.boundary_conditions.mass_and_momentum",
+   "kind": "Object",
+   "stage": "pre",
+   "description": "Mass and momentum boundary-condition branch for speed, pressure, and flow regime.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "boundary.boundary_conditions.heat_transfer",
+   "kind": "Object",
+   "stage": "pre",
+   "description": "Thermal boundary-condition branch for adiabatic, fixed temperature, and heat flux walls.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "domain.fluid_models.heat_transfer_model.option",
+   "kind": "Parameter",
+   "stage": "pre",
+   "description": "Select Thermal Energy, Total Energy, or related heat-transfer model on a CFX domain.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "domain.fluid_definition.<fluid-definition-key>.material",
+   "kind": "Pattern",
+   "stage": "pre",
+   "description": "Set a material on an existing fluid_definition entry discovered in the active CFX domain.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "pre.setup.flow.Flow Analysis 1.domain.Default Domain.domain_models.reference_pressure.reference_pressure",
+   "kind": "Parameter",
+   "stage": "pre",
+   "description": "Set reference pressure on Flow Analysis 1 / Default Domain.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "pre.setup.flow.Flow Analysis 1.domain.Default Domain.fluid_models.heat_transfer_model.option",
+   "kind": "Parameter",
+   "stage": "pre",
+   "description": "Set the heat-transfer model on Flow Analysis 1 / Default Domain.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "pre.setup.flow.Flow Analysis 1.domain.Default Domain.fluid_models.turbulence_model.option",
+   "kind": "Parameter",
+   "stage": "pre",
+   "description": "Set the turbulence model on Flow Analysis 1 / Default Domain.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "pre.file.import_mesh",
+   "kind": "Command",
+   "stage": "pre",
+   "description": "Import a mesh file into CFX-Pre before creating domains and boundaries.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "pre.file.write_solver_input_file",
+   "kind": "Command",
+   "stage": "pre",
+   "description": "Write a CFX Solver input .def file from the current CFX-Pre setup.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "Solver.from_install",
+   "kind": "Constructor",
+   "stage": "solver",
+   "description": "Launch CFX Solver from an input .def file.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "solver.solution.start_run",
+   "kind": "Command",
+   "stage": "solver",
+   "description": "Start the CFX Solver run.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "solver.solution.wait_for_run",
+   "kind": "Command",
+   "stage": "solver",
+   "description": "Block until the CFX Solver run completes.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "solver.solution.get_results_file_name",
+   "kind": "Command",
+   "stage": "solver",
+   "description": "Return the .res results file produced by a solver run.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "PostProcessing.from_install",
+   "kind": "Constructor",
+   "stage": "post",
+   "description": "Launch CFD-Post against a .res results file.",
+   "verification_status": "verified"
+  },
+  {
+   "name": "post.results.contour",
+   "kind": "NamedObject",
+   "stage": "post",
+   "description": "CFD-Post contour collection for temperature, pressure, velocity, and other result plots.",
+   "verification_status": "verified"
+  }
+ ]
+}

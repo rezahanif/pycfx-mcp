@@ -18,7 +18,7 @@ This document defines how each AiConnect MCP connector covers its host applicati
 | Connector | Have | Missing | How to complete |
 |---|---|---|---|
 | **sap2000** | 241 verified methods (registry.json) | Full OAPI — 334K lines of API docs suggest 500-1000+ total methods | Reflect on `SAP2000.tlb` COM type library on Windows |
-| **ansys-cfx** | 20 tools in base class, 18 catalog entries | Full CFX API method list | Reflect on `ansys-cfx-core` Python package |
+| **ansys-cfx** | 33 tools registered, **18 exposed**, **20** catalog entries | Full CFX API method list | Reflect on `ansys-cfx-core` Python package |
 | **qgis** | Partial PyQGIS docs scan (~300 estimated) | Complete PyQGIS class/method enumeration | Scan `pyqgis-apidocs` or QGIS Python console `help()` |
 | **revit** | ~200 classes indexed (30 namespaces from SDK docs) | Full Revit API — 3,000+ classes total | Reflect on `RevitAPI.dll` + `RevitAPIUI.dll` on Windows |
 | **office** | 10 API doc files (learn.microsoft.com) | Full COM type libraries — 3,000+ methods | Reflect on Office `.tlb` type library files via COM on Windows |
@@ -87,7 +87,7 @@ Generic code execution covering 100% of the API:
 
 ---
 
-### 3. ansys-cfx-mcp — 20 defined, 10 exposed ⚠️ PARTIAL
+### 3. ansys-cfx-mcp — 33 registered, 18 exposed ⚠️ PARTIAL
 
 | Layer | Tools | What they cover |
 |---|---|---|
@@ -194,3 +194,24 @@ Agent discovers API (Layer B) → Agent writes code → Exec hatch executes (Lay
 This is what abaqus, sap2000, and revit use. The agent handles the intelligence; the tool handles the transport.
 
 Connectors without exec hatches (office, discovery-studio) are limited to whatever Layer A implements — which is never more than a small fraction of a 3,000+ method API.
+
+
+---
+
+## Correction — 2026-08-28 (bundle benchmark)
+
+This document predates `c74703d` (10 → 23 exposed) and the benchmark cleanup that followed
+(23 → 18). Corrected facts:
+
+- **Exposed tools: 18**, not 10. `_CFX_API_CATALOG` holds **20** entries, not 18 (AST-counted at
+  `cfx/backend.py:301-469`).
+- Five tools were removed from the default profile after measuring **0.00 marginal coverage** —
+  `connect`, `disconnect`, `search_cfx_api`, `query_cfx_registry`, `get_version`. Each had a twin
+  that already covered it. They remain registrable via an explicit `expose_tools`.
+- The "Benchmark Paradox" section is now measured rather than argued: the exec hatch does carry the
+  API surface, but the typed tools are not therefore worthless — `set_setup` alone is worth
+  **8.79 pt** of weighted coverage at 118 tokens, the highest in the bundle.
+- The connector now ships a **tier-2 shadow index** (`manifest.tool_index`, 20 verified entries,
+  `run_code` as the hatch): +24.2 pt weighted coverage at zero tool-surface tokens.
+
+Full measurement: `aiconnector/docs/audit/ANSYS-CFX-API-BENCHMARK.md`.

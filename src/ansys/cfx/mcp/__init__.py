@@ -16,11 +16,19 @@
 
 """Standalone PyCFX-MCP package."""
 
-import importlib.metadata as importlib_metadata
-
 from ansys.cfx.mcp.cfx import CFXMCP
 
-__version__ = importlib_metadata.version(__name__.replace(".", "-"))
+# A plain literal, deliberately — same reasoning as discovery-studio's `__init__.py`.
+#
+# This was `importlib.metadata.version(__name__.replace(".", "-"))`, which requires the
+# distribution's own `.dist-info` to be installed. The gateway never installs anything:
+# it spawns `python run_server.py` inside an extracted package directory, so the lookup
+# raised `PackageNotFoundError: No package metadata was found for ansys-cfx-mcp` on the
+# very first import and the connector could not start at all on a user's machine. It
+# only ever worked on a machine where somebody had run `pip install -e .`.
+#
+# Keep in sync with `version` in pyproject.toml.
+__version__ = "1.0.0"
 """PyCFX MCP version."""
 
 __all__ = ["CFXMCP", "__version__"]

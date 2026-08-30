@@ -219,7 +219,7 @@ async def test_run_code_without_connection_returns_error() -> None:
 async def test_disconnect_when_not_connected_is_safe() -> None:
     leaf = CFXMCP()
 
-    result = await _call_tool(leaf, "disconnect")
+    result = await _call_tool(leaf, "disconnect_cfx")
 
     assert result["status"] in {"ok", "error"}
 

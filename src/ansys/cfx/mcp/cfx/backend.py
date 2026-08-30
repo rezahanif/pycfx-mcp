@@ -1223,6 +1223,16 @@ class CFXBackend(Backend):
             except Exception:
                 results_file = None
         results_file = results_file or SessionManager.get_results_file()
+        if not results_file:
+            # Reporting "ok" with a null path made "no run has happened yet"
+            # indistinguishable from "the run produced no results file". Every
+            # sibling helper returns a typed error when there is nothing to act
+            # on; this one answered from empty state on every call.
+            return {
+                "status": "error",
+                "message": "No results file available - no CFX-Solver run has produced one.",
+                "results_file": None,
+            }
         return {"status": "ok", "results_file": results_file}
 
     async def get_version(self) -> dict[str, Any]:
