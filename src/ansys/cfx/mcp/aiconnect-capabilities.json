@@ -140,6 +140,143 @@
    "stage": "post",
    "description": "CFD-Post contour collection for temperature, pressure, velocity, and other result plots.",
    "verification_status": "verified"
+  },
+  {
+   "name": "cfx_model_context",
+   "aliases": [
+    "compact slice of the cfx model",
+    "list named objects in the case",
+    "targeted context for the current setup"
+   ]
+  },
+  {
+   "name": "cfx_workflow",
+   "aliases": [
+    "import a mesh file",
+    "write the def file",
+    "launch cfx pre",
+    "lifecycle action from mesh to results"
+   ]
+  },
+  {
+   "name": "connect_cfx",
+   "aliases": [
+    "attach to a cfx session",
+    "launch a cfx product instance",
+    "open a case file"
+   ]
+  },
+  {
+   "name": "disconnect_cfx",
+   "aliases": [
+    "close the cfx sessions",
+    "release cfx resources"
+   ]
+  },
+  {
+   "name": "error_remediation",
+   "aliases": [
+    "how to configure a rotating domain",
+    "diagnose a solver error message",
+    "walk through a cfx workflow in prose",
+    "troubleshooting guidance"
+   ]
+  },
+  {
+   "name": "find_api",
+   "aliases": [
+    "locate the pycfx path for a setting",
+    "which api path implements this action",
+    "ranked candidate api paths"
+   ]
+  },
+  {
+   "name": "get_help",
+   "aliases": [
+    "docstring for an api path",
+    "allowed values of a parameter",
+    "child names under a path"
+   ]
+  },
+  {
+   "name": "get_results",
+   "aliases": [
+    "path to the res results file",
+    "where the solver wrote its output"
+   ]
+  },
+  {
+   "name": "get_setup",
+   "aliases": [
+    "summary of the current cfx setup",
+    "named objects and solver state"
+   ]
+  },
+  {
+   "name": "get_solve_status",
+   "aliases": [
+    "is the solver still running",
+    "solver run progress and results file"
+   ]
+  },
+  {
+   "name": "list_cfx_api_categories",
+   "aliases": [
+    "browse cfx api categories",
+    "pre solver and post api areas"
+   ]
+  },
+  {
+   "name": "run_code",
+   "aliases": [
+    "execute pycfx python against the session",
+    "drive pre solver and post objects"
+   ]
+  },
+  {
+   "name": "save_case",
+   "aliases": [
+    "save the cfx pre case",
+    "write a cfx file to disk"
+   ]
+  },
+  {
+   "name": "session_status",
+   "aliases": [
+    "is a cfx backend attached",
+    "which endpoint is connected",
+    "state of the cfx leaf"
+   ]
+  },
+  {
+   "name": "set_setup",
+   "aliases": [
+    "change the turbulence model",
+    "assign a boundary condition value",
+    "set a domain property on a path"
+   ]
+  },
+  {
+   "name": "start_solve",
+   "aliases": [
+    "run the cfx solver",
+    "begin the simulation from a def file",
+    "submit the solve"
+   ]
+  },
+  {
+   "name": "stop_solve",
+   "aliases": [
+    "halt the active solver run",
+    "abort the simulation"
+   ]
+  },
+  {
+   "name": "validate_code",
+   "aliases": [
+    "dry run cfx python without side effects",
+    "parse and type check before applying"
+   ]
   }
  ]
 }

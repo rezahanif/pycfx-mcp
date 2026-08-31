@@ -23,6 +23,29 @@ BACKEND = ROOT / "src/ansys/cfx/mcp/cfx/backend.py"
 CONFIG = ROOT / "src/ansys/cfx/mcp/config"
 OUT = ROOT / "src/ansys/cfx/mcp/aiconnect-capabilities.json"
 
+# --- connector-shipped alias phrasings -------------------------------------
+# Authored intent phrasings live in ONE file next to the generated index, and
+# this generator is the only thing that copies them. The gateway folds them into
+# its BM25 haystack only (ToolDoc::add_search_text) - never into the summary the
+# model is shown, and never into the embedding.
+#
+# They are emitted as alias-only entries naming LISTED tools. shadow_docs skips a
+# capability whose name collides with a real tool (the callable one wins), but
+# merge_capability_aliases harvests its phrasings onto that tool first, so this is
+# exactly where aliases pay. An older gateway simply skips them: backward compatible.
+ALIAS_FILE = OUT.parent / "aiconnect_aliases.json"
+
+
+def alias_entries(taken: set) -> list:
+    """Alias-only entries for tools that ARE listed. No description - the real
+    one arrives over tools/list."""
+    if not ALIAS_FILE.is_file():
+        return []
+    aliases = json.loads(ALIAS_FILE.read_text(encoding="utf-8")).get("aliases", {})
+    return [{"name": n, "aliases": aliases[n]}
+            for n in sorted(aliases) if n not in taken and aliases[n]]
+
+
 
 def verified():
     for node in ast.walk(ast.parse(BACKEND.read_text())):
@@ -85,7 +108,12 @@ def main():
     n_v = len(caps)
     if a.include_docs:
         caps += documented(a.doc_limit)
-    OUT.write_text(json.dumps({"exec_tool": "run_code", "capabilities": caps}, indent=1))
+    # `caps` stays the capability list, so every count below is unchanged by
+    # aliases; the alias-only entries exist purely as a search channel.
+    enriched = alias_entries({c["name"] for c in caps})
+    OUT.write_text(json.dumps({"exec_tool": "run_code",
+                               "capabilities": caps + enriched}, indent=1))
+    print(f"alias-only entries for listed tools: {len(enriched)}")
     print(f"{OUT.relative_to(ROOT)}: {len(caps)} capabilities "
           f"({n_v} verified, {len(caps) - n_v} documented)")
 
